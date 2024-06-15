@@ -1,128 +1,131 @@
 <template>
   <div>
-    <h1>Запись на прием</h1>
-    <form @submit.prevent="bookAppointment">
-      <label>Дата:</label>
-      <input type="date" v-model="appointment_date" @change="fetchAllAvailableTimes" />
-
-      <div v-for="(service, index) in selectedServices" :key="index" class="service-selection">
-        <label>Мастер:</label>
-        <select v-model="service.master_id" @change="fetchAvailableServices(service)">
-          <option v-for="master in masters" :key="master.id" :value="master.id">{{ master.name }}</option>
-        </select>
-
-        <label>Услуга:</label>
-        <select v-model="service.service_id" @change="fetchAvailableTimes(service)">
-          <option v-for="serviceOption in service.availableServices" :key="serviceOption.id" :value="serviceOption.id">{{ serviceOption.name }}</option>
-        </select>
-
-        <label>Время:</label>
-        <select v-model="service.start_time">
-          <option v-for="time in service.availableTimes" :key="time" :value="time">{{ time }}</option>
-        </select>
-
-        <button type="button" @click="removeService(index)">Удалить услугу</button>
+    <h2>Запись на прием</h2>
+    <!-- Выбор даты -->
+    <div>
+      <h3>Выберите дату</h3>
+      <input type="date" v-model="appointmentDate" @change="fetchTimeSlots">
+    </div>
+    <!-- Выбор времени -->
+    <div>
+      <h3>Выберите время</h3>
+      <select v-model="startTime" @change="fetchMastersAndServices" :disabled="timeSlots.length === 0">
+        <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
+      </select>
+    </div>
+    <!-- Выбор мастера и услуги -->
+    <div>
+      <h3>Выберите мастера и услугу</h3>
+      <div v-for="master in masters" :key="master.id">
+        <h4>{{ master.name }}</h4>
+        <div v-for="service in master.services" :key="service.id">
+          <label>
+            <input type="checkbox" :value="service.id" @change="toggleService(master.id, service.id)" :disabled="startTime === ''">
+            {{ service.name }} ({{ service.duration }} мин)
+          </label>
+        </div>
       </div>
-
-      <button type="button" @click="addService">Добавить услугу</button>
-      <button type="submit">Записаться</button>
-    </form>
-    <div v-if="error" class="error">{{ error }}</div>
+    </div>
+    <!-- Кнопка записи -->
+    <button @click="bookAppointment" :disabled="Object.keys(selectedServices).length === 0 || startTime === ''">Записаться</button>
   </div>
 </template>
 
 <script>
 import axios from '@/axios';
+import { mapActions, mapState } from 'vuex';
 
 export default {
   data() {
     return {
+      appointmentDate: '',
+      startTime: '',
+      timeSlots: [],
       masters: [],
-      services: [],
-      selectedServices: [
-        {
-          master_id: null,
-          service_id: null,
-          start_time: null,
-          availableServices: [],
-          availableTimes: [],
-        },
-      ],
-      appointment_date: '',
-      error: null,
+      selectedServices: {}
     };
   },
+  computed: {
+    ...mapState(['user'])
+  },
   methods: {
-    async fetchMasters() {
-      const response = await axios.get('/masters');
-      this.masters = response.data;
-    },
-    async fetchAvailableServices(service) {
-      if (service.master_id) {
-        const response = await axios.get(`/masters/${service.master_id}/services`);
-        service.availableServices = response.data;
+    ...mapActions(['login', 'logout', 'initializeStore']),
+    async fetchTimeSlots() {
+      if (this.appointmentDate === '') return;
+      try {
+        const response = await axios.post('/get-available-time-slots', { appointment_date: this.appointmentDate });
+        this.timeSlots = response.data.time_slots;
+        this.startTime = ''; // Сброс времени при изменении даты
+        this.masters = []; // Сброс мастеров и услуг при изменении даты
+        this.selectedServices = {}; // Сброс выбранных услуг при изменении даты
+      } catch (error) {
+        console.error("Error fetching time slots:", error);
       }
     },
-    async fetchAvailableTimes(service) {
-      if (service.master_id && service.service_id && this.appointment_date) {
-        const response = await axios.post('/schedules/available-times', {
-          master_id: service.master_id,
-          date: this.appointment_date,
+    async fetchMastersAndServices() {
+      if (this.startTime === '') return;
+      try {
+        const response = await axios.post('/get-available-masters-and-services', {
+          appointment_date: this.appointmentDate,
+          start_time: this.startTime
         });
-        service.availableTimes = response.data;
+        this.masters = response.data.masters;
+        this.selectedServices = {}; // Сброс выбранных услуг при изменении времени
+      } catch (error) {
+        console.error("Error fetching masters and services:", error);
       }
     },
-    async fetchAllAvailableTimes() {
-      for (const service of this.selectedServices) {
-        await this.fetchAvailableTimes(service);
+    toggleService(masterId, serviceId) {
+      if (!this.selectedServices[masterId]) {
+        this.selectedServices[masterId] = [];
       }
-    },
-    addService() {
-      this.selectedServices.push({
-        master_id: null,
-        service_id: null,
-        start_time: null,
-        availableServices: [],
-        availableTimes: [],
-      });
-    },
-    removeService(index) {
-      this.selectedServices.splice(index, 1);
+      const index = this.selectedServices[masterId].indexOf(serviceId);
+      if (index === -1) {
+        this.selectedServices[masterId].push(serviceId);
+      } else {
+        this.selectedServices[masterId].splice(index, 1);
+      }
     },
     async bookAppointment() {
       try {
-        const services = this.selectedServices.map(service => ({
-          master_id: service.master_id,
-          service_id: service.service_id,
-          start_time: service.start_time,
-        }));
+        const services = [];
+        for (const masterId in this.selectedServices) {
+          const serviceIds = this.selectedServices[masterId];
+          if (Array.isArray(serviceIds)) {
+            serviceIds.forEach(serviceId => {
+              services.push({ service_id: serviceId, master_id: masterId });
+            });
+          }
+        }
+
         const response = await axios.post('/appointments', {
-          user_id: this.$store.state.user.id,
-          appointment_date: this.appointment_date,
-          services,
+          user_id: this.user.id,
+          appointment_date: this.appointmentDate,
+          start_time: this.startTime,
+          services: services
         });
         alert(response.data.message);
+        // Сброс полей после успешного бронирования
+        this.appointmentDate = '';
+        this.startTime = '';
+        this.timeSlots = [];
+        this.masters = [];
+        this.selectedServices = {};
       } catch (error) {
+        console.error("Error booking appointment:", error);
         if (error.response) {
-          this.error = error.response.data.message;
-          console.error(error.response.data.details);
-        } else {
-          this.error = 'An unexpected error occurred';
+          console.error('Error details:', error.response.data);
+          alert(`Error: ${error.response.data.message || 'An error occurred while booking the appointment'}`);
         }
       }
-    },
+    }
   },
   mounted() {
-    this.fetchMasters();
-  },
+    this.initializeStore();
+  }
 };
 </script>
 
 <style scoped>
-.service-selection {
-  margin-bottom: 10px;
-}
-.error {
-  color: red;
-}
+/* Добавьте свои стили здесь */
 </style>

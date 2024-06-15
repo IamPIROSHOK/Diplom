@@ -15,7 +15,6 @@ class Schedule extends Model
         return $this->belongsTo(Master::class);
     }
 
-
     public static function isTimeSlotAvailable($masterId, $appointmentDate, $startTime, $endTime)
     {
         // Проверка на наличие расписания
@@ -40,5 +39,23 @@ class Schedule extends Model
             })->exists();
 
         return !$appointmentConflict;
+    }
+
+    public static function getAvailableTimeSlots($date)
+    {
+        $schedules = self::where('date', $date)->get();
+        $timeSlots = [];
+
+        foreach ($schedules as $schedule) {
+            $startTime = strtotime($schedule->start_time);
+            $endTime = strtotime($schedule->end_time);
+
+            while ($startTime < $endTime) {
+                $timeSlots[] = date('H:i', $startTime);
+                $startTime += 3600; // 1 час
+            }
+        }
+
+        return array_unique($timeSlots);
     }
 }
