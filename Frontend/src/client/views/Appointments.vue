@@ -1,89 +1,127 @@
 <template>
   <div>
     <h2>Запись на прием</h2>
+
+    <!-- Выбор мастера -->
+    <div>
+      <h3>Выберите мастера</h3>
+      <select v-model="selectedMaster" @change="fetchServices">
+        <option value="" disabled>Выберите мастера</option>
+        <option v-for="master in allMasters" :key="master.id" :value="master">{{ master.name }}</option>
+      </select>
+    </div>
+
     <!-- Выбор даты -->
     <div>
       <h3>Выберите дату</h3>
-      <input type="date" v-model="appointmentDate" @change="fetchTimeSlots">
+      <input type="date" v-model="appointmentDate" @change="fetchServices">
     </div>
+
     <!-- Выбор времени -->
     <div>
       <h3>Выберите время</h3>
-      <select v-model="startTime" @change="fetchMastersAndServices" :disabled="timeSlots.length === 0">
+      <select v-model="startTime" @change="fetchServices" :disabled="timeSlots.length === 0">
+        <option value="" disabled>Выберите время</option>
         <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
       </select>
     </div>
-    <!-- Выбор мастера и услуги -->
+
+    <!-- Выбор услуг -->
     <div>
-      <h3>Выберите мастера и услугу</h3>
-      <div v-for="master in masters" :key="master.id">
-        <h4>{{ master.name }}</h4>
-        <div v-for="service in master.services" :key="service.id">
-          <label>
-            <input type="checkbox" :value="service.id" @change="toggleService(master.id, service.id)" :disabled="startTime === ''">
-            {{ service.name }} ({{ service.duration }} мин)
-          </label>
-        </div>
+      <h3>Выберите услугу</h3>
+      <div v-for="service in availableServices" :key="service.id">
+        <label>
+          <input type="checkbox" :value="service.id" @change="toggleService(service.id)">
+          {{ service.name }} ({{ service.duration }} мин)
+        </label>
       </div>
     </div>
+
     <!-- Кнопка записи -->
-    <button @click="bookAppointment" :disabled="Object.keys(selectedServices).length === 0 || startTime === ''">Записаться</button>
+    <button @click="bookAppointment" :disabled="Object.keys(selectedServices).length === 0 || !startTime">Записаться</button>
   </div>
 </template>
 
 <script>
 import axios from '@/axios';
-import { mapActions, mapState } from 'vuex';
+import { mapState } from 'vuex';
 
 export default {
   data() {
     return {
+      selectedMaster: null,
       appointmentDate: '',
       startTime: '',
       timeSlots: [],
-      masters: [],
-      selectedServices: {}
+      allMasters: [],
+      availableServices: [],
+      selectedServices: {},
     };
   },
   computed: {
     ...mapState(['user'])
   },
   methods: {
-    ...mapActions(['login', 'logout', 'initializeStore']),
-    async fetchTimeSlots() {
-      if (this.appointmentDate === '') return;
+    async fetchAllMasters() {
       try {
-        const response = await axios.post('/get-available-time-slots', { appointment_date: this.appointmentDate });
-        this.timeSlots = response.data.time_slots;
-        this.startTime = ''; // Сброс времени при изменении даты
-        this.masters = []; // Сброс мастеров и услуг при изменении даты
-        this.selectedServices = {}; // Сброс выбранных услуг при изменении даты
+        const response = await axios.get('/masters');
+        this.allMasters = response.data;
       } catch (error) {
-        console.error("Error fetching time slots:", error);
+        console.error("Error fetching masters:", error);
       }
     },
-    async fetchMastersAndServices() {
-      if (this.startTime === '') return;
+    async fetchServices() {
+      if (!this.selectedMaster && !this.appointmentDate) {
+        this.fetchAllServices();
+        return;
+      }
+
       try {
-        const response = await axios.post('/get-available-masters-and-services', {
+        const response = await axios.post('/get-available-services', {
           appointment_date: this.appointmentDate,
-          start_time: this.startTime
+          master_id: this.selectedMaster ? this.selectedMaster.id : null,
+          start_time: this.startTime || null,
         });
-        this.masters = response.data.masters;
-        this.selectedServices = {}; // Сброс выбранных услуг при изменении времени
+        this.availableServices = response.data.services;
       } catch (error) {
-        console.error("Error fetching masters and services:", error);
+        console.error("Error fetching services:", error);
+      }
+
+      if (this.selectedMaster && this.appointmentDate) {
+        await this.fetchTimeSlotsAndServices();
       }
     },
-    toggleService(masterId, serviceId) {
-      if (!this.selectedServices[masterId]) {
-        this.selectedServices[masterId] = [];
+    async fetchAllServices() {
+      try {
+        const response = await axios.get('/services');
+        this.availableServices = response.data;
+      } catch (error) {
+        console.error("Error fetching all services:", error);
       }
-      const index = this.selectedServices[masterId].indexOf(serviceId);
+    },
+    async fetchTimeSlotsAndServices() {
+      if (!this.selectedMaster || !this.appointmentDate) return;
+
+      try {
+        const response = await axios.post('/get-available-time-slots-and-services', {
+          appointment_date: this.appointmentDate,
+          master_id: this.selectedMaster.id
+        });
+        this.timeSlots = response.data.time_slots;
+        this.availableServices = response.data.services;
+      } catch (error) {
+        console.error("Error fetching time slots and services:", error);
+      }
+    },
+    toggleService(serviceId) {
+      if (!this.selectedServices[this.selectedMaster.id]) {
+        this.selectedServices[this.selectedMaster.id] = [];
+      }
+      const index = this.selectedServices[this.selectedMaster.id].indexOf(serviceId);
       if (index === -1) {
-        this.selectedServices[masterId].push(serviceId);
+        this.selectedServices[this.selectedMaster.id].push(serviceId);
       } else {
-        this.selectedServices[masterId].splice(index, 1);
+        this.selectedServices[this.selectedMaster.id].splice(index, 1);
       }
     },
     async bookAppointment() {
@@ -106,10 +144,11 @@ export default {
         });
         alert(response.data.message);
         // Сброс полей после успешного бронирования
+        this.selectedMaster = null;
         this.appointmentDate = '';
         this.startTime = '';
         this.timeSlots = [];
-        this.masters = [];
+        this.availableServices = [];
         this.selectedServices = {};
       } catch (error) {
         console.error("Error booking appointment:", error);
@@ -118,10 +157,15 @@ export default {
           alert(`Error: ${error.response.data.message || 'An error occurred while booking the appointment'}`);
         }
       }
+    },
+    initializeStore() {
+      this.$store.dispatch('initializeStore');
     }
   },
   mounted() {
     this.initializeStore();
+    this.fetchAllMasters();
+    this.fetchAllServices();
   }
 };
 </script>

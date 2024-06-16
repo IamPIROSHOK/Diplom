@@ -46,3 +46,7 @@ Route::post('/schedules/available-times', [ScheduleController::class, 'getAvaila
 Route::post('/get-available-time-slots', [AppointmentController::class, 'getAvailableTimeSlots']);
 Route::post('/get-available-masters-and-services', [AppointmentController::class, 'getAvailableMastersAndServices']);
 Route::post('/appointments', [AppointmentController::class, 'store']);
+
+Route::post('/get-available-time-slots-and-services', [AppointmentController::class, 'getAvailableTimeSlotsAndServices']);
+Route::post('/get-available-services', [AppointmentController::class, 'getAvailableServices']);
+Route::get('/services', [AppointmentController::class, 'getAllServices']);

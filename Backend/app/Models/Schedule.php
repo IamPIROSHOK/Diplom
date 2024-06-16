@@ -15,30 +15,17 @@ class Schedule extends Model
         return $this->belongsTo(Master::class);
     }
 
-    public static function isTimeSlotAvailable($masterId, $appointmentDate, $startTime, $endTime)
+    public static function isTimeSlotAvailable($masterId, $date, $startTime, $endTime)
     {
-        // Проверка на наличие расписания
-        $schedule = self::where('master_id', $masterId)
-            ->where('date', $appointmentDate)
-            ->where('start_time', '<=', $startTime)
-            ->where('end_time', '>=', $endTime)
-            ->exists();
-
-        if (!$schedule) {
-            return false;
-        }
-
-        // Проверка на наличие конфликтующих записей
-        $appointmentConflict = Appointment::where('appointment_date', $appointmentDate)
+        return !Appointment::where('appointment_date', $date)
             ->whereHas('masters', function ($query) use ($masterId, $startTime, $endTime) {
                 $query->where('master_id', $masterId)
                     ->where(function ($query) use ($startTime, $endTime) {
                         $query->where('appointment_to_masters.start_time', '<', $endTime)
                             ->where('appointment_to_masters.end_time', '>', $startTime);
                     });
-            })->exists();
-
-        return !$appointmentConflict;
+            })
+            ->exists();
     }
 
     public static function getAvailableTimeSlots($date)
