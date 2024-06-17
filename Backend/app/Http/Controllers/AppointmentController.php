@@ -104,12 +104,13 @@ class AppointmentController extends Controller
     {
         $appointmentDate = $request->input('appointment_date');
         $selectedMasterIds = $request->input('master_ids');
+        $selectedServiceIds = $request->input('service_ids');
 
         $servicesQuery = Service::query();
+        $mastersQuery = Master::query();
         $timeSlots = [];
 
         if ($appointmentDate) {
-            // Получение расписания всех мастеров на выбранную дату, если не выбраны конкретные мастера
             $schedules = Schedule::where('date', $appointmentDate)
                 ->when($selectedMasterIds, function ($query) use ($selectedMasterIds) {
                     return $query->whereIn('master_id', $selectedMasterIds);
@@ -119,7 +120,8 @@ class AppointmentController extends Controller
             if ($schedules->isEmpty()) {
                 return response()->json([
                     'time_slots' => [],
-                    'services' => []
+                    'services' => [],
+                    'masters' => []
                 ]);
             }
 
@@ -146,21 +148,38 @@ class AppointmentController extends Controller
 
             $timeSlots = array_unique($timeSlots);
 
-            // Получение всех услуг, которые выполняются выбранными мастерами, если они выбраны
             $servicesQuery->when($selectedMasterIds, function ($query) use ($selectedMasterIds) {
                 $query->whereHas('masters', function($query) use ($selectedMasterIds) {
                     $query->whereIn('masters.id', $selectedMasterIds);
                 });
             });
+
+            $mastersQuery->when($selectedServiceIds, function ($query) use ($selectedServiceIds) {
+                $query->whereHas('services', function($query) use ($selectedServiceIds) {
+                    $query->whereIn('services.id', $selectedServiceIds);
+                });
+            });
+
+            if ($selectedServiceIds) {
+                $mastersQuery->whereHas('schedules', function ($query) use ($appointmentDate) {
+                    $query->where('date', $appointmentDate);
+                });
+            }
         }
 
         $services = $servicesQuery->get();
+        $masters = $mastersQuery->get()->map(function($master) {
+            $master->photo = $master->photo ? url($master->photo) : url('/uploads/default_photo.jpg');
+            return $master;
+        });
 
         return response()->json([
             'time_slots' => $timeSlots,
-            'services' => $services
+            'services' => $services,
+            'masters' => $masters
         ]);
     }
+
 
 
 

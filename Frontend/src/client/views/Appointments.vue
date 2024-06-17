@@ -1,10 +1,24 @@
 <template>
-  <div>
+  <div class="container mt-5">
     <h2>Запись на прием</h2>
+
+    <!-- Выбор услуги -->
+    <div>
+      <h5>Выберите услугу</h5>
+      <div class="services-grid">
+        <ServiceCard
+            v-for="service in availableServices"
+            :key="service.id"
+            :service="service"
+            :isSelected="!!selectedServices[service.id]"
+            @select="toggleService"
+        />
+      </div>
+    </div>
 
     <!-- Выбор мастера -->
     <div>
-      <h3>Выберите мастера</h3>
+      <h5>Выберите мастера</h5>
       <div class="masters-grid">
         <MasterCard
             v-for="master in allMasters"
@@ -18,13 +32,13 @@
 
     <!-- Выбор даты -->
     <div>
-      <h3>Выберите дату</h3>
+      <h5>Выберите дату</h5>
       <input type="date" v-model="appointmentDate" :min="minDate" @change="fetchServicesAndTimeSlots">
     </div>
 
     <!-- Выбор времени -->
     <div>
-      <h3>Выберите время</h3>
+      <h5>Выберите время</h5>
       <div class="times-grid">
         <TimeSlot
             v-for="time in uniqueTimeSlots"
@@ -34,22 +48,8 @@
             @select="selectTimeSlot"
         />
       </div>
-      <p v-if="uniqueTimeSlots.length === 0 && !selectedMasters.length">Пожалуйста, выберите мастера для отображения доступного времени</p>
+      <p v-if="uniqueTimeSlots.length === 0 && !selectedMasters.length && !selectedServiceIds.length">Пожалуйста, выберите мастера или услугу для отображения доступного времени</p>
       <p v-else-if="uniqueTimeSlots.length === 0">К сожалению на этот день нет свободного времени для записи</p>
-    </div>
-
-    <!-- Выбор услуг -->
-    <div>
-      <h3>Выберите услугу</h3>
-      <div class="services-grid">
-        <ServiceCard
-            v-for="service in availableServices"
-            :key="service.id"
-            :service="service"
-            :isSelected="!!selectedServices[service.id]"
-            @select="toggleService"
-        />
-      </div>
     </div>
 
     <!-- Кнопка записи -->
@@ -86,6 +86,9 @@ export default {
     ...mapState(['user']),
     uniqueTimeSlots() {
       return [...new Set(this.timeSlots)];
+    },
+    selectedServiceIds() {
+      return Object.keys(this.selectedServices);
     }
   },
   methods: {
@@ -102,12 +105,14 @@ export default {
         const payload = {
           appointment_date: this.appointmentDate || null,
           master_ids: this.selectedMasters.length ? this.selectedMasters : null,
+          service_ids: this.selectedServiceIds.length ? this.selectedServiceIds : null,
           start_time: this.startTime || null,
         };
 
         const response = await axios.post('/get-available-time-slots-and-services', payload);
         this.timeSlots = response.data.time_slots;
         this.availableServices = response.data.services;
+        this.allMasters = response.data.masters;
       } catch (error) {
         console.error("Error fetching services and time slots:", error);
         if (error.response) {
@@ -133,6 +138,7 @@ export default {
       } else {
         this.selectedServices = { ...this.selectedServices, [service.id]: true };
       }
+      this.fetchServicesAndTimeSlots();
     },
     async bookAppointment() {
       try {
@@ -185,7 +191,6 @@ export default {
 .masters-grid, .services-grid, .times-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
+  gap: 8px;
 }
 </style>
