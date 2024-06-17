@@ -102,29 +102,70 @@ class AppointmentController extends Controller
 
     public function getAvailableTimeSlotsAndServices(Request $request)
     {
-        $validated = $request->validate([
-            'appointment_date' => 'nullable|date',
-            'master_id' => 'nullable|exists:masters,id',
-            'start_time' => 'nullable|date_format:H:i',
-        ]);
+        $appointmentDate = $request->input('appointment_date');
+        $selectedMasterIds = $request->input('master_ids');
 
-        Log::info('Validated data:', $validated);
+        $servicesQuery = Service::query();
+        $timeSlots = [];
 
-        $appointmentDate = $validated['appointment_date'];
-        $masterId = $validated['master_id'];
-        $startTime = $validated['start_time'];
+        if ($appointmentDate) {
+            // Получение расписания всех мастеров на выбранную дату, если не выбраны конкретные мастера
+            $schedules = Schedule::where('date', $appointmentDate)
+                ->when($selectedMasterIds, function ($query) use ($selectedMasterIds) {
+                    return $query->whereIn('master_id', $selectedMasterIds);
+                })
+                ->get();
 
-        // Получение доступных временных слотов
-        $timeSlots = $this->fetchTimeSlots($appointmentDate, $masterId, $startTime);
+            if ($schedules->isEmpty()) {
+                return response()->json([
+                    'time_slots' => [],
+                    'services' => []
+                ]);
+            }
 
-        // Получение доступных услуг
-        $services = $this->fetchServices($appointmentDate, $masterId, $startTime);
+            foreach ($schedules as $schedule) {
+                $start = new \DateTime($schedule->start_time);
+                $end = new \DateTime($schedule->end_time);
+
+                while ($start < $end) {
+                    $timeSlot = $start->format('H:i');
+                    $isBooked = Appointment::whereHas('masters', function ($query) use ($schedule, $appointmentDate, $timeSlot) {
+                        $query->where('master_id', $schedule->master_id)
+                            ->where('appointment_date', $appointmentDate)
+                            ->where('start_time', '<=', $timeSlot)
+                            ->where('end_time', '>', $timeSlot);
+                    })->exists();
+
+                    if (!$isBooked) {
+                        $timeSlots[] = $timeSlot;
+                    }
+
+                    $start->modify('+30 minutes');
+                }
+            }
+
+            $timeSlots = array_unique($timeSlots);
+
+            // Получение всех услуг, которые выполняются выбранными мастерами, если они выбраны
+            $servicesQuery->when($selectedMasterIds, function ($query) use ($selectedMasterIds) {
+                $query->whereHas('masters', function($query) use ($selectedMasterIds) {
+                    $query->whereIn('masters.id', $selectedMasterIds);
+                });
+            });
+        }
+
+        $services = $servicesQuery->get();
 
         return response()->json([
             'time_slots' => $timeSlots,
-            'services' => $services,
+            'services' => $services
         ]);
     }
+
+
+
+
+
 
     // Метод для получения доступных временных слотов
     private function fetchTimeSlots($appointmentDate, $masterId, $startTime)
