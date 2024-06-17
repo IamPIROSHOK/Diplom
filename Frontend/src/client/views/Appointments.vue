@@ -5,25 +5,36 @@
     <!-- Выбор мастера -->
     <div>
       <h3>Выберите мастера</h3>
-      <select v-model="selectedMaster" @change="fetchServices">
-        <option value="" disabled>Выберите мастера</option>
-        <option v-for="master in allMasters" :key="master.id" :value="master">{{ master.name }}</option>
-      </select>
+      <div class="masters-grid">
+        <MasterCard
+            v-for="master in allMasters"
+            :key="master.id"
+            :master="master"
+            :isSelected="selectedMaster && master.id === selectedMaster.id"
+            @select="selectMaster"
+        />
+      </div>
     </div>
 
     <!-- Выбор даты -->
     <div>
       <h3>Выберите дату</h3>
-      <input type="date" v-model="appointmentDate" @change="fetchServices">
+      <input type="date" v-model="appointmentDate" @change="fetchServicesAndTimeSlots">
     </div>
 
     <!-- Выбор времени -->
     <div>
       <h3>Выберите время</h3>
-      <select v-model="startTime" @change="fetchServices" :disabled="timeSlots.length === 0">
-        <option value="" disabled>Выберите время</option>
-        <option v-for="time in timeSlots" :key="time" :value="time">{{ time }}</option>
-      </select>
+      <div class="times-grid">
+        <TimeSlot
+            v-for="time in timeSlots"
+            :key="time"
+            :time="time"
+            :isSelected="time === startTime"
+            @select="selectTimeSlot"
+        />
+      </div>
+      <p v-if="timeSlots.length === 0">К сожалению на этот день нет свободного времени для записи</p>
     </div>
 
     <!-- Выбор услуг -->
@@ -45,8 +56,14 @@
 <script>
 import axios from '@/axios';
 import { mapState } from 'vuex';
+import MasterCard from '../components/MasterCard.vue';
+import TimeSlot from '../components/TimeSlot.vue';
 
 export default {
+  components: {
+    MasterCard,
+    TimeSlot
+  },
   data() {
     return {
       selectedMaster: null,
@@ -70,48 +87,33 @@ export default {
         console.error("Error fetching masters:", error);
       }
     },
-    async fetchServices() {
-      if (!this.selectedMaster && !this.appointmentDate) {
-        this.fetchAllServices();
-        return;
-      }
-
+    async fetchServicesAndTimeSlots() {
       try {
-        const response = await axios.post('/get-available-services', {
-          appointment_date: this.appointmentDate,
+        const payload = {
+          appointment_date: this.appointmentDate || null,
           master_id: this.selectedMaster ? this.selectedMaster.id : null,
           start_time: this.startTime || null,
-        });
-        this.availableServices = response.data.services;
-      } catch (error) {
-        console.error("Error fetching services:", error);
-      }
+        };
 
-      if (this.selectedMaster && this.appointmentDate) {
-        await this.fetchTimeSlotsAndServices();
-      }
-    },
-    async fetchAllServices() {
-      try {
-        const response = await axios.get('/services');
-        this.availableServices = response.data;
-      } catch (error) {
-        console.error("Error fetching all services:", error);
-      }
-    },
-    async fetchTimeSlotsAndServices() {
-      if (!this.selectedMaster || !this.appointmentDate) return;
+        console.log("Payload being sent to the server:", payload);
 
-      try {
-        const response = await axios.post('/get-available-time-slots-and-services', {
-          appointment_date: this.appointmentDate,
-          master_id: this.selectedMaster.id
-        });
+        const response = await axios.post('/get-available-time-slots-and-services', payload);
         this.timeSlots = response.data.time_slots;
         this.availableServices = response.data.services;
       } catch (error) {
-        console.error("Error fetching time slots and services:", error);
+        console.error("Error fetching services and time slots:", error);
+        if (error.response) {
+          console.error('Error details:', error.response.data);
+          alert(`Error: ${error.response.data.message || 'An error occurred while fetching time slots and services'}`);
+        }
       }
+    },
+    selectMaster(master) {
+      this.selectedMaster = this.selectedMaster && this.selectedMaster.id === master.id ? null : master;
+      this.fetchServicesAndTimeSlots();
+    },
+    selectTimeSlot(time) {
+      this.startTime = time;
     },
     toggleService(serviceId) {
       if (!this.selectedServices[this.selectedMaster.id]) {
@@ -165,11 +167,23 @@ export default {
   mounted() {
     this.initializeStore();
     this.fetchAllMasters();
-    this.fetchAllServices();
+    this.fetchServicesAndTimeSlots();
   }
 };
 </script>
 
 <style scoped>
-/* Добавьте свои стили здесь */
+.masters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.times-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
 </style>
