@@ -6,7 +6,7 @@
 
       <!-- Brand -->
       <router-link class="navbar-brand" to="/">
-        Shopper.
+        BeautyFull.
       </router-link>
 
       <!-- Toggler -->
