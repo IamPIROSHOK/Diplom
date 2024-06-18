@@ -1,6 +1,6 @@
 <template>
-  <div class="container mt-5">
-    <h2 class="mb-4 text-center">Наши мастера</h2>
+  <div class="container mt-5 home-masters">
+    <h2 class="mb-8 text-center">Наши мастера</h2>
     <swiper
         :slides-per-view="3"
         :centered-slides="true"
@@ -70,6 +70,10 @@ export default {
 
 <style scoped>
 /* Стили для слайдера */
+.home-masters {
+  padding: 25px 0;
+}
+
 .slider-item {
   padding: 0 10px;
   outline: none;
@@ -95,13 +99,13 @@ export default {
 }
 
 .btn-primary {
-  background-color: #5cb85c;
-  border-color: #5cb85c;
+  background-color: #ff6f61;
+  border-color: #ff6f61;
 }
 
 .btn-primary:hover {
-  background-color: #4cae4c;
-  border-color: #4cae4c;
+  background-color: #ff6f61;
+  border-color: #ff6f61;
 }
 
 .swiper-button-next, .swiper-button-prev {
