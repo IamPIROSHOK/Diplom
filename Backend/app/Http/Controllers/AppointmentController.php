@@ -104,7 +104,7 @@ class AppointmentController extends Controller
         $selectedServiceIds = $request->input('service_ids');
 
         $servicesQuery = Service::query();
-        $mastersQuery = Master::query();
+        $mastersQuery = Master::with('services');
         $timeSlots = [];
 
         if ($appointmentDate) {
@@ -136,23 +136,25 @@ class AppointmentController extends Controller
                     })->exists();
 
                     if (!$isBooked) {
-                        $timeSlots[] = $timeSlot;
+                        $timeSlots[$schedule->master_id][] = $timeSlot;
                     }
 
                     $start->modify('+30 minutes');
                 }
             }
 
-            $timeSlots = array_unique($timeSlots);
+            foreach ($timeSlots as $key => $slots) {
+                $timeSlots[$key] = array_unique($slots);
+            }
 
             $servicesQuery->when($selectedMasterIds, function ($query) use ($selectedMasterIds) {
-                $query->whereHas('masters', function($query) use ($selectedMasterIds) {
+                $query->whereHas('masters', function ($query) use ($selectedMasterIds) {
                     $query->whereIn('masters.id', $selectedMasterIds);
                 });
             });
 
             $mastersQuery->when($selectedServiceIds, function ($query) use ($selectedServiceIds) {
-                $query->whereHas('services', function($query) use ($selectedServiceIds) {
+                $query->whereHas('services', function ($query) use ($selectedServiceIds) {
                     $query->whereIn('services.id', $selectedServiceIds);
                 });
             });
@@ -165,7 +167,7 @@ class AppointmentController extends Controller
         }
 
         $services = $servicesQuery->get();
-        $masters = $mastersQuery->get()->map(function($master) {
+        $masters = $mastersQuery->get()->map(function ($master) {
             $master->photo = $master->photo ? url($master->photo) : url('/uploads/default_photo.jpg');
             return $master;
         });
@@ -176,6 +178,10 @@ class AppointmentController extends Controller
             'masters' => $masters
         ]);
     }
+
+
+
+
 
     public function getAvailableServices(Request $request)
     {

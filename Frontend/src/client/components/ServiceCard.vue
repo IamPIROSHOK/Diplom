@@ -1,10 +1,8 @@
 <template>
   <div class="service-card" :class="{ selected: isSelected }" @click="selectService">
-    <div class="service-info">
-      <h3>{{ service.name }}</h3>
-      <p>{{ service.price }} руб.</p>
-      <p>Длительность: {{ service.duration }} мин</p>
-    </div>
+    <h3>{{ service.name }}</h3>
+    <p>{{ service.price }} руб.</p>
+    <p>Длительность: {{ service.duration }} мин</p>
   </div>
 </template>
 
@@ -46,14 +44,12 @@ export default {
   background-color: #f0f0f0;
 }
 
-.service-info h3 {
-  font-size: 16px;
-  margin: 0;
+.service-card h3 {
+  font-size: 18px;
+  margin: 0 0 10px;
 }
 
-.service-info p {
-  font-size: 14px;
-  margin: 0;
-  color: #666;
+.service-card p {
+  margin: 5px 0;
 }
 </style>
