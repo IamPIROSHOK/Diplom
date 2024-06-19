@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Log;
 
 class AppointmentController extends Controller
 {
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -77,7 +76,6 @@ class AppointmentController extends Controller
         $startTime = $request->start_time;
         $endTime = date('H:i', strtotime($startTime) + 1800); // 30 минут
 
-        // Находим всех мастеров, которые свободны в указанное время
         $masters = Schedule::where('date', $appointmentDate)
             ->where('start_time', '<=', $startTime)
             ->where('end_time', '>=', $endTime)
@@ -98,7 +96,6 @@ class AppointmentController extends Controller
 
         return response()->json(['masters' => $masters]);
     }
-
 
     public function getAvailableTimeSlotsAndServices(Request $request)
     {
@@ -180,62 +177,6 @@ class AppointmentController extends Controller
         ]);
     }
 
-
-
-
-
-
-
-    // Метод для получения доступных временных слотов
-    private function fetchTimeSlots($appointmentDate, $masterId, $startTime)
-    {
-        $query = Schedule::query();
-
-        if ($appointmentDate) {
-            $query->where('date', $appointmentDate);
-        }
-
-        if ($masterId) {
-            $query->where('master_id', $masterId);
-        }
-
-        // Получение всех доступных временных слотов
-        $schedules = $query->get();
-
-        // Преобразование временных слотов в необходимый формат
-        $timeSlots = [];
-        foreach ($schedules as $schedule) {
-            $current = strtotime($schedule->start_time);
-            $end = strtotime($schedule->end_time);
-            while ($current < $end) {
-                $timeSlots[] = date('H:i', $current);
-                $current = strtotime('+30 minutes', $current);
-            }
-        }
-
-        return $timeSlots;
-    }
-
-    // Метод для получения доступных услуг
-    private function fetchServices($appointmentDate, $masterId, $startTime)
-    {
-        $query = Service::query();
-
-        if ($masterId) {
-            $query->whereHas('masters', function ($query) use ($masterId) {
-                $query->where('master_id', $masterId);
-            });
-        }
-
-        if ($appointmentDate) {
-            $query->whereHas('masters.schedules', function ($query) use ($appointmentDate) {
-                $query->where('date', $appointmentDate);
-            });
-        }
-
-        return $query->get();
-    }
-
     public function getAvailableServices(Request $request)
     {
         $validated = $request->validate([
@@ -277,5 +218,4 @@ class AppointmentController extends Controller
         $services = Service::all();
         return response()->json($services);
     }
-
 }

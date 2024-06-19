@@ -14,6 +14,8 @@ class MasterController extends Controller
 
         $masters = Master::all()->map(function($master) use ($defaultPhotoUrl) {
             $master->photo = $master->photo ? url($master->photo) : $defaultPhotoUrl;
+            $master->services = $master->services->pluck('id'); // Добавить идентификаторы услуг мастера
+
 //            $master->photo = $defaultPhotoUrl;
 
             return $master;
