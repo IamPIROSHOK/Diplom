@@ -16,29 +16,17 @@
       </div>
     </div>
 
-    <!-- Выбор мастера и времени для каждой услуги -->
-    <div v-for="serviceId in selectedServiceIds" :key="serviceId">
-      <h5>Выберите мастера и время для услуги</h5>
-      <div>
-        <h6>{{ availableServices.find(service => service.id === parseInt(serviceId)).name }}</h6>
-        <div class="masters-grid">
-          <MasterCard
-              v-for="master in filteredMasters(serviceId)"
-              :key="master.id"
-              :master="master"
-              :isSelected="selectedMasters[serviceId] && selectedMasters[serviceId] === master.id"
-              @select="() => selectMasterForService(serviceId, master.id)"
-          />
-        </div>
-        <div class="times-grid">
-          <TimeSlot
-              v-for="time in uniqueTimeSlots(serviceId, selectedMasters[serviceId])"
-              :key="time"
-              :time="time"
-              :isSelected="selectedTimeSlots[serviceId] && selectedTimeSlots[serviceId] === time"
-              @select="() => selectTimeForService(serviceId, time)"
-          />
-        </div>
+    <!-- Выбор мастера -->
+    <div>
+      <h5>Выберите мастера</h5>
+      <div class="masters-grid">
+        <MasterCard
+            v-for="master in filteredMasters"
+            :key="master.id"
+            :master="master"
+            :isSelected="selectedMasters.includes(master.id)"
+            @select="toggleMasterSelection"
+        />
       </div>
     </div>
 
@@ -48,11 +36,24 @@
       <input type="date" v-model="appointmentDate" :min="minDate" @change="fetchServicesAndTimeSlots">
     </div>
 
-    <p v-if="selectedServiceIds.length > 0 && !canBook">Пожалуйста, выберите мастера и время для каждой услуги</p>
-    <p v-else-if="selectedServiceIds.length === 0">К сожалению на этот день нет свободного времени для записи</p>
+    <!-- Выбор времени -->
+    <div style="padding-top:20px;">
+      <h5>Выберите время</h5>
+      <div class="times-grid">
+        <TimeSlot
+            v-for="time in uniqueTimeSlots"
+            :key="time"
+            :time="time"
+            :isSelected="time === startTime"
+            @select="selectTimeSlot"
+        />
+      </div>
+      <p v-if="uniqueTimeSlots.length === 0 && !selectedMasters.length && !selectedServiceIds.length">Пожалуйста, выберите мастера или услугу для отображения доступного времени</p>
+      <p v-else-if="uniqueTimeSlots.length === 0">К сожалению на этот день нет свободного времени для записи</p>
+    </div>
 
     <!-- Кнопка записи -->
-    <button class="btn btn-primary" @click="bookAppointment" :disabled="Object.keys(selectedServices).length === 0 || !canBook">Записаться</button>
+    <button class="btn btn-primary" @click="bookAppointment" :disabled="Object.keys(selectedServices).length === 0 || !startTime">Записаться</button>
   </div>
 </template>
 
@@ -71,10 +72,10 @@ export default {
   },
   data() {
     return {
-      selectedMasters: {},
+      selectedMasters: [],
       appointmentDate: this.getTodayDate(),
-      selectedTimeSlots: {},
-      timeSlots: {},
+      startTime: '',
+      timeSlots: [],
       allMasters: [],
       availableServices: [],
       selectedServices: {},
@@ -83,11 +84,24 @@ export default {
   },
   computed: {
     ...mapState(['user']),
+    uniqueTimeSlots() {
+      // Flatten the timeSlots object to get unique time slots
+      const allSlots = Object.values(this.timeSlots).flat();
+      return [...new Set(allSlots)];
+    },
     selectedServiceIds() {
       return Object.keys(this.selectedServices);
     },
+    filteredMasters() {
+      if (this.selectedServiceIds.length === 0) {
+        return this.allMasters;
+      }
+      return this.allMasters.filter(master => {
+        return master.services && master.services.some(service => this.selectedServiceIds.includes(service.id.toString()));
+      });
+    },
     canBook() {
-      return this.selectedServiceIds.every(serviceId => this.selectedMasters[serviceId] && this.selectedTimeSlots[serviceId]);
+      return this.selectedServiceIds.length > 0 && this.selectedMasters.length > 0 && this.startTime;
     }
   },
   methods: {
@@ -104,7 +118,7 @@ export default {
       try {
         const payload = {
           appointment_date: this.appointmentDate || null,
-          master_ids: Object.values(this.selectedMasters).length ? Object.values(this.selectedMasters) : null,
+          master_ids: this.selectedMasters.length ? this.selectedMasters : null,
           service_ids: this.selectedServiceIds.length ? this.selectedServiceIds : null,
         };
 
@@ -126,12 +140,16 @@ export default {
         }
       }
     },
-    selectMasterForService(serviceId, masterId) {
-      this.selectedMasters = { ...this.selectedMasters, [serviceId]: masterId };
+    toggleMasterSelection(master) {
+      if (this.selectedMasters.includes(master.id)) {
+        this.selectedMasters = this.selectedMasters.filter(id => id !== master.id);
+      } else {
+        this.selectedMasters.push(master.id);
+      }
       this.fetchServicesAndTimeSlots();
     },
-    selectTimeForService(serviceId, time) {
-      this.selectedTimeSlots = { ...this.selectedTimeSlots, [serviceId]: time };
+    selectTimeSlot(time) {
+      this.startTime = time;
     },
     toggleService(service) {
       if (this.selectedServices[service.id]) {
@@ -145,14 +163,16 @@ export default {
     async bookAppointment() {
       try {
         const services = [];
-        for (const serviceId in this.selectedServices) {
-          if (this.selectedServices[serviceId]) {
-            services.push({
-              service_id: serviceId,
-              master_id: this.selectedMasters[serviceId],
-              start_time: this.selectedTimeSlots[serviceId]
-            });
-          }
+        let currentStartTime = this.startTime;
+
+        for (const serviceId of this.selectedServiceIds) {
+          const service = this.availableServices.find(s => s.id === parseInt(serviceId));
+          const duration = service ? service.duration : 0;
+          const endTime = new Date(new Date(`1970-01-01T${currentStartTime}Z`).getTime() + duration * 60000).toISOString().substr(11, 5);
+
+          services.push({ service_id: serviceId, master_id: this.selectedMasters[0], start_time: currentStartTime, end_time: endTime });
+
+          currentStartTime = endTime;
         }
 
         const response = await axios.post('/appointments', {
@@ -160,13 +180,14 @@ export default {
           appointment_date: this.appointmentDate,
           services: services
         });
+
         alert(response.data.message);
-        this.selectedMasters = {};
+        this.selectedMasters = [];
         this.appointmentDate = this.getTodayDate();
-        this.timeSlots = {};
+        this.startTime = '';
+        this.timeSlots = [];
         this.availableServices = [];
         this.selectedServices = {};
-        this.selectedTimeSlots = {};
         this.fetchServicesAndTimeSlots();
       } catch (error) {
         console.error("Error booking appointment:", error);
@@ -183,18 +204,6 @@ export default {
       const today = new Date();
       return today.toISOString().substr(0, 10);
     },
-    filteredMasters(serviceId) {
-      console.log("Filtering masters for service ID:", serviceId);
-      return this.allMasters.filter(master => {
-        return master.services && master.services.some(service => service.id === parseInt(serviceId));
-      });
-    },
-    uniqueTimeSlots(serviceId, masterId) {
-      if (this.timeSlots[masterId]) {
-        return [...new Set(this.timeSlots[masterId])];
-      }
-      return [];
-    }
   },
   mounted() {
     this.initializeStore();

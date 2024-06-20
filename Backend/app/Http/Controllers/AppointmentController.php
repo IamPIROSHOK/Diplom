@@ -122,21 +122,33 @@ class AppointmentController extends Controller
                 ]);
             }
 
+            $duration = 0;
+            if ($selectedServiceIds) {
+                $duration = Service::whereIn('id', $selectedServiceIds)->sum('duration');
+            }
+
             foreach ($schedules as $schedule) {
                 $start = new \DateTime($schedule->start_time);
                 $end = new \DateTime($schedule->end_time);
 
                 while ($start < $end) {
-                    $timeSlot = $start->format('H:i');
-                    $isBooked = Appointment::whereHas('masters', function ($query) use ($schedule, $appointmentDate, $timeSlot) {
+                    $timeSlot = clone $start;
+                    $endTime = clone $start;
+                    $endTime->modify("+{$duration} minutes");
+
+                    if ($endTime > $end) {
+                        break;
+                    }
+
+                    $isBooked = Appointment::whereHas('masters', function ($query) use ($schedule, $appointmentDate, $timeSlot, $endTime) {
                         $query->where('master_id', $schedule->master_id)
                             ->where('appointment_date', $appointmentDate)
-                            ->where('start_time', '<=', $timeSlot)
-                            ->where('end_time', '>', $timeSlot);
+                            ->where('start_time', '<', $endTime->format('H:i'))
+                            ->where('end_time', '>', $timeSlot->format('H:i'));
                     })->exists();
 
                     if (!$isBooked) {
-                        $timeSlots[$schedule->master_id][] = $timeSlot;
+                        $timeSlots[$schedule->master_id][] = $timeSlot->format('H:i');
                     }
 
                     $start->modify('+30 minutes');
@@ -178,6 +190,7 @@ class AppointmentController extends Controller
             'masters' => $masters
         ]);
     }
+
 
 
 

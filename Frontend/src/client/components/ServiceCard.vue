@@ -28,8 +28,6 @@ export default {
 
 <style scoped>
 .service-card {
-  display: flex;
-  align-items: center;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px;
