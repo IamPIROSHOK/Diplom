@@ -10,15 +10,13 @@ class Service extends Model
     use HasFactory;
     protected $fillable = ['name', 'description', 'price', 'duration', 'photo'];
 
+    protected $casts = [
+        'parallel_services' => 'array',
+    ];
 
     public function masters()
     {
         return $this->belongsToMany(Master::class, 'masters_to_services');
     }
 
-    public function appointments()
-    {
-        return $this->belongsToMany(Appointment::class, 'appointment_to_services')
-            ->withPivot('start_time', 'end_time');
-    }
 }

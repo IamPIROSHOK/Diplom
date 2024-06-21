@@ -35,25 +35,4 @@ class MasterController extends Controller
         return response()->json($master->services);
     }
 
-//    public function store(Request $request)
-//    {
-//        $request->validate([
-//            'name' => 'required|string|max:255',
-//            'description' => 'required|string',
-//            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-//        ]);
-//
-//        $photoPath = null;
-//        if ($request->hasFile('photo')) {
-//            $photoPath = $request->file('photo')->store('uploads/masters', 'public');
-//        }
-//
-//        $master = Master::create([
-//            'name' => $request->name,
-//            'description' => $request->description,
-//            'photo' => $photoPath ? url($photoPath) : null,
-//        ]);
-//
-//        return response()->json($master, 201);
-//    }
 }

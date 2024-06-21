@@ -17,23 +17,12 @@ class AppointmentController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'appointment_date' => 'required|date',
-            'start_time' => 'required|date_format:H:i',
             'services' => 'required|array',
             'services.*.service_id' => 'required|exists:services,id',
             'services.*.master_id' => 'required|exists:masters,id',
+            'services.*.start_time' => 'required|date_format:H:i',
+            'services.*.end_time' => 'required|date_format:H:i',
         ]);
-
-        $startTime = $validated['start_time'];
-
-        foreach ($validated['services'] as $serviceData) {
-            $service = Service::find($serviceData['service_id']);
-            $masterId = $serviceData['master_id'];
-            $endTime = date('H:i', strtotime($startTime) + $service->duration * 60); // Рассчитываем время окончания на основе длительности услуги
-
-            if (!Schedule::isTimeSlotAvailable($masterId, $validated['appointment_date'], $startTime, $endTime)) {
-                return response()->json(['message' => 'The selected time slot is already booked'], 400);
-            }
-        }
 
         try {
             DB::beginTransaction();
@@ -45,14 +34,10 @@ class AppointmentController extends Controller
             ]);
 
             foreach ($validated['services'] as $serviceData) {
-                $service = Service::find($serviceData['service_id']);
-                $masterId = $serviceData['master_id'];
-                $endTime = date('H:i', strtotime($startTime) + $service->duration * 60); // Рассчитываем время окончания на основе длительности услуги
-
                 $appointment->services()->attach($serviceData['service_id']);
-                $appointment->masters()->attach($masterId, [
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
+                $appointment->masters()->attach($serviceData['master_id'], [
+                    'start_time' => $serviceData['start_time'],
+                    'end_time' => $serviceData['end_time'],
                 ]);
             }
 
@@ -191,11 +176,6 @@ class AppointmentController extends Controller
         ]);
     }
 
-
-
-
-
-
     public function getAvailableServices(Request $request)
     {
         $validated = $request->validate([
@@ -238,3 +218,4 @@ class AppointmentController extends Controller
         return response()->json($services);
     }
 }
+

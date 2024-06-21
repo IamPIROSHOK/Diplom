@@ -38,12 +38,10 @@ Route::get('schedules/{id}', [ScheduleController::class, 'show']);
 Route::put('schedules/{id}', [ScheduleController::class, 'update']);
 Route::delete('schedules/{id}', [ScheduleController::class, 'destroy']);
 
-Route::post('/appointments', [AppointmentController::class, 'store']);
 
 Route::get('/masters/{id}/services', [MasterController::class, 'getServices']);
 Route::post('/schedules/available-times', [ScheduleController::class, 'getAvailableTimes']);
 
-Route::post('/get-available-time-slots', [AppointmentController::class, 'getAvailableTimeSlots']);
 Route::post('/get-available-masters-and-services', [AppointmentController::class, 'getAvailableMastersAndServices']);
 Route::post('/appointments', [AppointmentController::class, 'store']);
 

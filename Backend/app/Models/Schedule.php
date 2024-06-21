@@ -15,7 +15,7 @@ class Schedule extends Model
         return $this->belongsTo(Master::class);
     }
 
-    public static function isTimeSlotAvailable($masterId, $date, $startTime, $endTime)
+    public static function isTimeSlotAvailable($masterId, $date, $startTime, $endTime): bool
     {
         return !Appointment::where('appointment_date', $date)
             ->whereHas('masters', function ($query) use ($masterId, $startTime, $endTime) {
@@ -28,15 +28,13 @@ class Schedule extends Model
             ->exists();
     }
 
-    public static function getAvailableTimeSlots($date)
+    public static function getAvailableTimeSlots($date): array
     {
         $schedules = self::where('date', $date)->get();
         $timeSlots = [];
-
         foreach ($schedules as $schedule) {
             $startTime = strtotime($schedule->start_time);
             $endTime = strtotime($schedule->end_time);
-
             while ($startTime < $endTime) {
                 $timeSlots[] = date('H:i', $startTime);
                 $startTime += 3600; // 1 час

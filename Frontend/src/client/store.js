@@ -21,8 +21,6 @@ export default createStore({
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             commit('LOGIN', user);
-
-            // Перенаправление на основе роли пользователя
             if (user.role === 'admin') {
                 window.location.href = '/admin';
             } else {
@@ -33,7 +31,7 @@ export default createStore({
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             commit('LOGOUT');
-            router.push('/login'); // Перенаправление на страницу логина после выхода
+            router.push('/login');
         },
         initializeStore({ commit }) {
             const user = JSON.parse(localStorage.getItem('user'));

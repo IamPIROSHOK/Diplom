@@ -1,8 +1,11 @@
+<!-- ServiceCard.vue -->
 <template>
-  <div class="service-card" :class="{ selected: isSelected }" @click="selectService">
-    <h3>{{ service.name }}</h3>
-    <p>{{ service.price }} руб.</p>
-    <p>Длительность: {{ service.duration }} мин</p>
+  <div class="service-card" @click="selectService" :class="{ selected: isSelected }">
+    <div class="service-info">
+      <h3>{{ service.name }}</h3>
+      <p>{{ service.price }} руб</p>
+      <p>Длительность: {{ service.duration }} мин</p>
+    </div>
   </div>
 </template>
 
@@ -28,6 +31,8 @@ export default {
 
 <style scoped>
 .service-card {
+  display: flex;
+  align-items: center;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 10px;
@@ -42,12 +47,8 @@ export default {
   background-color: #f0f0f0;
 }
 
-.service-card h3 {
-  font-size: 18px;
-  margin: 0 0 10px;
-}
-
-.service-card p {
-  margin: 5px 0;
+.service-info h3 {
+  font-size: 16px;
+  margin: 0;
 }
 </style>
