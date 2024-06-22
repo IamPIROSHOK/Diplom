@@ -19,4 +19,8 @@ class Service extends Model
         return $this->belongsToMany(Master::class, 'masters_to_services');
     }
 
+    public function discounts()
+    {
+        return $this->belongsToMany(Discount::class, 'discounts_to_services');
+    }
 }

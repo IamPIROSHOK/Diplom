@@ -42,11 +42,11 @@ class AppointmentController extends Controller
             }
 
             DB::commit();
-            return response()->json(['message' => 'Booking successful', 'appointment' => $appointment]);
+            return response()->json(['message' => 'Запись произошла успешно', 'appointment' => $appointment]);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error booking appointment: ' . $e->getMessage());
-            return response()->json(['message' => 'An error occurred while booking the appointment'], 500);
+
+            return response()->json(['message' => 'Возникла ошибка во время записи'], 500);
         }
     }
 
@@ -59,7 +59,7 @@ class AppointmentController extends Controller
 
         $appointmentDate = $request->appointment_date;
         $startTime = $request->start_time;
-        $endTime = date('H:i', strtotime($startTime) + 1800); // 30 минут
+        $endTime = date('H:i', strtotime($startTime) + 1800);
 
         $masters = Schedule::where('date', $appointmentDate)
             ->where('start_time', '<=', $startTime)
@@ -216,6 +216,19 @@ class AppointmentController extends Controller
     {
         $services = Service::all();
         return response()->json($services);
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|string',
+        ]);
+
+        $appointment = Appointment::findOrFail($id);
+        $appointment->status = $request->status;
+        $appointment->save();
+
+        return response()->json(['message' => 'Appointment status updated successfully'], 200);
     }
 }
 

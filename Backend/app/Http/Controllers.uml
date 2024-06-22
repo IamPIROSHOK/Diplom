@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>PHP</ID>
+  <OriginalElement>D:/OSPanel/domains/DiplomProject/Backend/app/Http/Controllers</OriginalElement>
+  <nodes>
+    <node x="750.5009010768811" y="-250.69440235725648">\Illuminate\Routing\Controller</node>
+    <node x="1185.7787802182913" y="206.90752599736754">\App\Http\Controllers\AppointmentController</node>
+    <node x="291.20665979856335" y="155.63412347316938">\App\Http\Controllers\ChatController</node>
+    <node x="286.6117466633088" y="-250.69440235725648">\Illuminate\Foundation\Validation\ValidatesRequests</node>
+    <node x="939.5287802182913" y="206.90752599736754">\App\Http\Controllers\ProductController</node>
+    <node x="984.5287802182913" y="20.58412347316937">\App\Http\Controllers\MasterController</node>
+    <node x="340.20665979856335" y="-35.53013944204355">\App\Http\Controllers\ServiceController</node>
+    <node x="562.3557836377222" y="155.63412347316938">\App\Http\Controllers\ScheduleController</node>
+    <node x="782.1049074768811" y="-40.3407357634519">\App\Http\Controllers\Controller</node>
+    <node x="1179.5287802182913" y="20.58412347316937">\App\Http\Controllers\DiscountController</node>
+    <node x="1023.0214707315106" y="-250.69440235725648">\Illuminate\Foundation\Auth\Access\AuthorizesRequests</node>
+    <node x="562.3557836377222" y="-35.53013944204355">\App\Http\Controllers\AuthController</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="\App\Http\Controllers\ChatController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="4.608165784532048E-4" y="-55.50027892817815" />
+      <point x="400.2071206151418" y="139.55199201556292" />
+      <point x="805.2298119167999" y="139.55199201556292" />
+      <point x="-32.37509556008115" y="8.007751545851896" />
+    </edge>
+    <edge source="\App\Http\Controllers\ProductController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="-5.278780218291331" y="-48.16552599736758" />
+      <point x="950.623414674564" y="238.24199999999996" />
+      <point x="950.623414674564" y="183.17373701676553" />
+      <point x="837.6049074768811" y="183.17373701676553" />
+      <point x="837.6049074768811" y="-15.404111749120002" />
+      <point x="848.63238353664" y="-15.404111749120002" />
+      <point x="848.63238353664" y="-16.520803246080003" />
+      <point x="21.117859596398944" y="9.8199325173719" />
+    </edge>
+    <edge source="\App\Http\Controllers\AuthController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="4.2797376821113176E-4" y="55.49998309242464" />
+      <point x="636.8562116114904" y="-18.011520512000022" />
+      <point x="838.8282160000001" y="-18.011520512000022" />
+      <point x="838.8282160000001" y="-21.039807999999994" />
+      <point x="24.561044523118994" y="5.300927763451909" />
+    </edge>
+    <edge source="\App\Http\Controllers\AppointmentController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="-127.27878021829133" y="-66.0899268277933" />
+      <point x="1213.5" y="156.9879447285403" />
+      <point x="858.3440715776001" y="156.9879447285403" />
+      <point x="858.3440715776001" y="-5.598000000000056" />
+      <point x="857.5300000000001" y="-5.598000000000056" />
+      <point x="19.92509252311902" y="6.022735763451848" />
+    </edge>
+    <edge source="\App\Http\Controllers\Controller" target="\Illuminate\Foundation\Auth\Access\AuthorizesRequests" relationship="REALIZATION">
+      <point x="56.92949252311894" y="5.300735763451939" />
+      <point x="1226.1608748622052" y="-21.039999999999964" />
+      <point x="1226.1608748622052" y="-147.19440235725648" />
+      <point x="-193.0" y="0.0" />
+    </edge>
+    <edge source="\App\Http\Controllers\DiscountController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="3.852772010759509E-5" y="55.49954540470043" />
+      <point x="1297.0288187460114" y="149.07162760497667" />
+      <point x="873.1082696704" y="149.07162760497667" />
+      <point x="35.50336219351891" y="10.8507246684119" />
+    </edge>
+    <edge source="\App\Http\Controllers\Controller" target="\Illuminate\Foundation\Validation\ValidatesRequests" relationship="REALIZATION">
+      <point x="-45.99731689556529" y="-14.0" />
+      <point x="791.6075905813158" y="-55.2472783825817" />
+      <point x="514.8340662964013" y="-55.2472783825817" />
+      <point x="514.8340662964013" y="-115.69440235725648" />
+      <point x="199.49999999999994" y="67.5" />
+    </edge>
+    <edge source="\App\Http\Controllers\MasterController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="-83.0000013585286" y="-1.234731693671165E-4" />
+      <point x="885.6316643818411" y="76.084" />
+      <point x="885.6316643818411" y="-16.952920125439984" />
+      <point x="880.228556" y="-16.952920125439984" />
+      <point x="880.228556" y="-19.571801599999986" />
+      <point x="876.56143327168" y="-19.571801599999986" />
+      <point x="876.56143327168" y="-16.00540717056" />
+      <point x="867.31865870304" y="-16.00540717056" />
+      <point x="867.31865870304" y="-14.802816327680002" />
+      <point x="33.69947592919891" y="11.5379194357719" />
+    </edge>
+    <edge source="\App\Http\Controllers\ServiceController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="27.769549518089775" y="23.511020288743666" />
+      <point x="452.4762093166531" y="90.86679730913708" />
+      <point x="788.8693799999996" y="90.86679730913708" />
+      <point x="788.8693799999996" y="8.82432" />
+      <point x="788.9766389759997" y="8.82432" />
+      <point x="-48.628268500881404" y="11.697347347451911" />
+    </edge>
+    <edge source="\App\Http\Controllers\ScheduleController" target="\App\Http\Controllers\Controller" relationship="GENERALIZATION">
+      <point x="3.171598939957221E-4" y="91.49970536822352" />
+      <point x="666.3561007976161" y="220.17593827669646" />
+      <point x="748.3989807976161" y="220.17593827669646" />
+      <point x="748.3989807976161" y="172.024287712" />
+      <point x="824.643184128" y="172.024287712" />
+      <point x="824.643184128" y="-15.57599999999999" />
+      <point x="828.1389760000001" y="-15.57599999999999" />
+      <point x="828.1389760000001" y="-15.575999999999993" />
+      <point x="-4.826667476881084" y="10.76473576345191" />
+    </edge>
+    <edge source="\App\Http\Controllers\Controller" target="\Illuminate\Routing\Controller" relationship="GENERALIZATION">
+      <point x="0.0" y="-14.0" />
+      <point x="837.6049074768811" y="-120.3271690603542" />
+      <point x="873.0009010768811" y="-120.3271690603542" />
+      <point x="0.0" y="-67.5" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic" zoom="1.0" showDependencies="false" x="896.0" y="33.5" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Methods</Category>
+  </Categories>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
